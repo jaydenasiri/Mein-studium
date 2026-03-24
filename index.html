@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mediendesign — Degree Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdf6fa;
+    --surface: #ffffff;
+    --surface2: #fce9f3;
+    --border: #f2c8e0;
+    --accent: #F2619C;
+    --accent2: #E7BEF8;
+    --accent3: #93ABD9;
+    --accent4: #EDE986;
+    --text: #2a1a22;
+    --muted: #a0607a;
+    --done: #93ABD9;
+    --active: #F2619C;
+    --upcoming: #c8a0b8;
+    --warn: #EDE986;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.15;
+  }
+
+  /* HEADER */
+  header {
+    padding: 3rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, #fff 60%, rgba(242,97,156,0.06) 100%);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #F2619C, #E7BEF8, #93ABD9, #EDE986);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: end;
+  }
+  .degree-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: var(--text);
+    line-height: 1.1;
+  }
+  h1 em {
+    color: #F2619C;
+    font-style: italic;
+  }
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 2;
+  }
+  .header-meta strong {
+    color: var(--accent3);
+    font-weight: 500;
+  }
+
+  /* MAIN PROGRESS */
+  .progress-section {
+    padding: 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+  }
+  .progress-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .progress-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .stat-value.green { color: #2a6aad; }
+  .stat-value.purple { color: #F2619C; }
+  .stat-value.pink { color: #9030c0; }
+  .stat-value.amber { color: #7a7200; }
+
+  .main-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .bar-label span {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .bar-label strong {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    background: linear-gradient(90deg, #93ABD9, #F2619C);
+  }
+  .progress-fill.amber { background: linear-gradient(90deg, #EDE986, #F2619C); }
+
+  /* TABS */
+  .tabs {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 0;
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.6rem 1rem;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    color: var(--muted);
+    background: transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: #F2619C;
+    border-color: var(--border);
+    border-bottom: 1px solid var(--bg);
+    background: var(--bg);
+    margin-bottom: -1px;
+  }
+
+  /* MAIN CONTENT */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CALENDAR / TIMELINE VIEW */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0;
+  }
+  .week-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0.75rem 0.75rem 0.75rem 0;
+    border-right: 1px solid var(--border);
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  .week-label .wk { color: var(--muted); }
+  .week-label .date { color: var(--text); font-size: 11px; }
+  .week-module {
+    padding: 0.6rem 0 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .week-module:hover { background: var(--surface); border-radius: 0 8px 8px 0; }
+  .week-label { border-bottom: 1px solid var(--border); }
+  .module-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .module-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .module-checkbox.checked {
+    background: #F2619C;
+    border-color: #F2619C;
+  }
+  .module-checkbox.checked::after {
+    content: '✓';
+    font-size: 11px;
+    color: #fff;
+    font-weight: 700;
+  }
+  .module-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+  .module-name.done { text-decoration: line-through; color: var(--muted); }
+  .module-type-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .badge-cwb { background: rgba(242,97,156,0.1); color: #c0185a; }
+  .badge-awb { background: rgba(242,97,156,0.15); color: #c0185a; border: 1px solid rgba(242,97,156,0.35); }
+  .badge-k { background: rgba(237,233,134,0.4); color: #7a7200; }
+  .badge-po { background: rgba(147,171,217,0.2); color: #2a4f8a; }
+  .badge-h { background: rgba(231,190,248,0.3); color: #7a30a8; }
+  .badge-fp { background: rgba(242,97,156,0.12); color: #c0185a; }
+  .badge-bpo { background: rgba(147,171,217,0.25); color: #2a4f8a; }
+  .badge-f { background: rgba(231,190,248,0.25); color: #7a30a8; }
+  .badge-s { background: rgba(237,233,134,0.35); color: #7a7200; }
+  .badge-wahlfach { background: rgba(231,190,248,0.3); color: #7a30a8; border: 1px solid rgba(231,190,248,0.5); }
+  .badge-sa { background: rgba(242,97,156,0.15); color: #c0185a; border: 1px solid rgba(242,97,156,0.4); }
+
+  .module-deadline {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .module-duration {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .sem-divider {
+    grid-column: 1 / -1;
+    padding: 1.5rem 0 0.5rem;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .sem-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .sem-divider span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* STATUS DOTS */
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-done { background: #93ABD9; }
+  .dot-active { background: #F2619C; box-shadow: 0 0 6px rgba(242,97,156,0.5); }
+  .dot-upcoming { background: #f2e4ec; border: 1px solid #f2c8e0; }
+  .dot-klausur { background: #c9c430; }
+  .dot-wahlfach { background: #E7BEF8; border: 1px solid #c08ae0; }
+  .dot-thesis { background: #F2619C; box-shadow: 0 0 8px rgba(242,97,156,0.6); }
+
+  /* MODULES OVERVIEW TABLE */
+  .modules-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .modules-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .modules-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid rgba(42,42,61,0.5);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .modules-table tr:hover td { background: var(--surface); }
+  .modules-table tr.done-row td { opacity: 0.5; }
+  .modules-table tr.done-row .module-name-cell { text-decoration: line-through; }
+  .ects-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .check-col { width: 36px; text-align: center; }
+
+  /* PROGRESS BY SEMESTER */
+  .sem-progress-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .sem-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .sem-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .sem-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+  }
+  .sem-card-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* MILESTONE SECTION */
+  .milestone-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s;
+  }
+  .milestone-row:hover { border-color: var(--accent); }
+  .milestone-row.thesis-row { border-color: rgba(200,184,255,0.4); }
+  .milestone-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 90px;
+  }
+  .milestone-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .milestone-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* GRADUATION COUNTDOWN */
+  .graduation-card {
+    background: linear-gradient(135deg, rgba(242,97,156,0.08), rgba(147,171,217,0.08));
+    border: 1.5px solid rgba(242,97,156,0.25);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .graduation-card .big-date {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    color: #F2619C;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .graduation-card .sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .filter-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { color: var(--text); border-color: #F2619C; }
+  .filter-btn.active { background: #F2619C; color: #fff; border-color: #F2619C; }
+
+  /* THESIS PHASES */
+  .thesis-timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .thesis-timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+  .thesis-phase {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  .thesis-phase::before {
+    content: '';
+    position: absolute;
+    left: -1.68rem;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--bg);
+  }
+  .thesis-phase.active::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .thesis-phase-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  .thesis-phase-title { font-size: 14px; font-weight: 500; }
+  .thesis-phase-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .thesis-phase-desc { font-size: 12px; color: var(--muted); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    animation: fadeUp 0.25s ease;
+  }
+  .modal-close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+    padding-right: 3rem;
+  }
+  .modal-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .modal-section { margin-bottom: 1.25rem; }
+  .modal-section h4 {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .modal-section p { font-size: 13px; line-height: 1.7; color: var(--text); }
+  .todo-list { list-style: none; }
+  .todo-item {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid rgba(42,42,61,0.4);
+    font-size: 13px;
+  }
+  .todo-cb {
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .todo-cb.done { background: #F2619C; border-color: #F2619C; }
+  .todo-cb.done::after { content: '✓'; font-size: 10px; color: #fff; font-weight: 700; }
+  .todo-text.done { text-decoration: line-through; color: var(--muted); }
+  .todo-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent4);
+    white-space: nowrap;
+    margin-left: auto;
+    padding-left: 0.5rem;
+  }
+  /* GOOGLE CALENDAR STYLE */
+  .gcal-wrap { }
+  .gcal-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .gcal-nav button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    transition: all 0.15s;
+  }
+  .gcal-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .gcal-month-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    flex: 1;
+  }
+  .gcal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .gcal-day-header {
+    background: var(--surface2);
+    text-align: center;
+    padding: 8px 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .gcal-cell {
+    background: var(--surface);
+    min-height: 90px;
+    padding: 6px;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .gcal-cell:hover { background: var(--surface2); }
+  .gcal-cell.other-month { opacity: 0.35; }
+  .gcal-cell.today { background: rgba(242,97,156,0.06); outline: 1.5px solid rgba(242,97,156,0.4); outline-offset: -1px; }
+  .gcal-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .gcal-cell.today .gcal-date {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .gcal-event {
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    transition: opacity 0.15s;
+  }
+  .gcal-event:hover { opacity: 0.8; }
+  .ev-uni { background: rgba(147,171,217,0.25); color: #2a4f8a; }
+  .ev-gym { background: rgba(231,190,248,0.3); color: #7a30a8; }
+  .ev-walk { background: rgba(147,171,217,0.2); color: #2a4f8a; }
+  .ev-work { background: rgba(162,100,128,0.12); color: #8a3060; }
+  .ev-ugc { background: rgba(242,97,156,0.12); color: #c0185a; }
+  .ev-design { background: rgba(231,190,248,0.25); color: #7a30a8; }
+  .ev-social { background: rgba(237,233,134,0.45); color: #7a7200; }
+  .ev-proposal { background: rgba(147,171,217,0.2); color: #2a4f8a; }
+  .ev-module { background: rgba(242,97,156,0.15); color: #c0185a; border-left: 2px solid #F2619C; }
+  .ev-exam { background: rgba(237,233,134,0.55); color: #5a5200; border-left: 2px solid #c9c430; font-weight: 500; }
+  .ev-deadline { background: rgba(242,97,156,0.2); color: #c0185a; border-left: 2px solid #F2619C; font-weight: 500; }
+  .gcal-more {
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 1px 4px;
+  }
+  .gcal-more:hover { color: var(--text); }
+  .gcal-cell { cursor: pointer; }
+
+  /* DAY POPUP */
+  .day-popup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(242,200,224,0.35);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .day-popup-overlay.open { display: flex; }
+  .day-popup {
+    background: #fff;
+    border: 1.5px solid rgba(242,97,156,0.2);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 82vh;
+    overflow-y: auto;
+    position: relative;
+    animation: fadeUp 0.2s ease;
+    box-shadow: 0 12px 48px rgba(242,97,156,0.12);
+  }
+  .day-popup-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid rgba(242,97,156,0.12);
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .day-popup-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    color: #2a1a22;
+    line-height: 1.1;
+  }
+  .day-popup-title span {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    color: #a0607a;
+    margin-top: 3px;
+  }
+  .day-popup-close {
+    background: rgba(242,97,156,0.08);
+    border: 1px solid rgba(242,97,156,0.2);
+    border-radius: 8px;
+    color: #F2619C;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .day-popup-close:hover { background: rgba(242,97,156,0.15); }
+  .day-popup-body { padding: 1rem 1.5rem 1.5rem; }
+  .day-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #a0607a;
+    margin: 1rem 0 0.5rem;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(242,97,156,0.1);
+  }
+  .day-section-label:first-child { margin-top: 0; }
+  .day-event-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .day-event-item.clickable { cursor: pointer; }
+  .day-event-item.clickable:hover { filter: brightness(0.93); }
+  .day-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .day-todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(242,97,156,0.08);
+    font-size: 13px;
+    color: #2a1a22;
+  }
+  .day-todo-item:last-child { border-bottom: none; }
+  .day-todo-cb {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(242,97,156,0.3);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .day-todo-cb.done { background: #F2619C; border-color: #F2619C; }
+  .day-todo-cb.done::after { content: '✓'; font-size: 10px; color: #fff; font-weight: 700; }
+  .day-todo-text { flex: 1; line-height: 1.5; }
+  .day-todo-text.done { text-decoration: line-through; color: #c8a0b8; }
+  .day-todo-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(242,97,156,0.08);
+    color: #c0185a;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .day-empty { font-size: 12px; color: #c8a0b8; text-align: center; padding: 2rem 0; font-family: 'DM Mono', monospace; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeUp 0.4s ease forwards; }
+
+  /* AI NOTE */
+  .ai-note {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(237,233,134,0.15);
+    border: 1px solid rgba(201,196,48,0.35);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .ai-note-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    .progress-grid { grid-template-columns: 1fr 1fr; }
+    .sem-progress-grid { grid-template-columns: 1fr; }
+    .header-inner { grid-template-columns: 1fr; }
+    .header-meta { text-align: left; }
+    .module-deadline { display: none; }
+    .module-duration { display: none; }
+    h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="degree-label">IU Internationale Hochschule · Bachelor of Arts</div>
+      <h1>Medien<em>design</em></h1>
+    </div>
+    <div class="header-meta">
+      <div>Start: <strong>26 März 2026</strong></div>
+      <div>Ziel: <strong>Dezember 2026</strong></div>
+      <div>ECTS total: <strong>180</strong></div>
+      <div>Bestanden mit: <strong>≥ 50%</strong></div>
+    </div>
+  </div>
+</header>
+
+<!-- PROGRESS STATS -->
+<div class="progress-section">
+  <div class="progress-inner">
+    <div class="progress-grid">
+      <div class="stat-card">
+        <div class="stat-label">Module abgeschlossen</div>
+        <div class="stat-value green" id="stat-done">0</div>
+        <div class="stat-sub">von 31 Modulen</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ECTS erreicht</div>
+        <div class="stat-value purple" id="stat-ects">0</div>
+        <div class="stat-sub">von 180 ECTS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Wochen investiert</div>
+        <div class="stat-value pink" id="stat-weeks">0</div>
+        <div class="stat-sub">von ~33 Wochen total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Abschluss in</div>
+        <div class="stat-value amber" id="stat-countdown">38</div>
+        <div class="stat-sub">Wochen ab heute</div>
+      </div>
+    </div>
+    <div class="main-bar-wrap">
+      <div class="bar-label">
+        <span>Gesamtfortschritt</span>
+        <strong id="pct-label">0%</strong>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="main-bar" style="width:0%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+        <div>
+          <div class="bar-label" style="margin-bottom:0.4rem;">
+            <span>Module (ohne Thesis)</span>
+            <strong id="pct-modules">0%</strong>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="bar-modules" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="bar-label" style="margin-bottom:0.4rem;">
+            <span>Bachelorarbeit</span>
+            <strong id="pct-thesis">0%</strong>
+          </div>
+          <div class="progress-bar"><div class="progress-fill amber" id="bar-thesis" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs" style="padding-left:2rem;padding-right:2rem;">
+  <button class="tab active" onclick="switchTab('timeline')">Kalender</button>
+  <button class="tab" onclick="switchTab('gcal')">Monatsansicht</button>
+  <button class="tab" onclick="switchTab('modules')">Module</button>
+  <button class="tab" onclick="switchTab('semesters')">Semester</button>
+  <button class="tab" onclick="switchTab('thesis')">Bachelorarbeit</button>
+  <button class="tab" onclick="switchTab('milestones')">Meilensteine</button>
+</div>
+
+<main>
+
+  <!-- ==================== TIMELINE TAB ==================== -->
+  <div class="tab-panel active" id="tab-timeline">
+    <div class="legend">
+      <div class="legend-item"><div class="status-dot dot-done"></div> Abgeschlossen</div>
+      <div class="legend-item"><div class="status-dot dot-active"></div> Aktuell</div>
+      <div class="legend-item"><div class="status-dot dot-upcoming"></div> Ausstehend</div>
+      <div class="legend-item"><div class="status-dot dot-klausur"></div> Klausur (2 Wochen)</div>
+      <div class="legend-item"><div class="status-dot dot-wahlfach"></div> Wahlpflicht (2 Wochen)</div>
+      <div class="legend-item"><div class="status-dot dot-thesis"></div> Bachelorarbeit</div>
+    </div>
+    <div class="calendar-grid" id="timeline-container">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+  <!-- DAY POPUP -->
+  <div class="day-popup-overlay" id="day-popup-overlay" onclick="if(event.target===this)closeDayPopup()">
+    <div class="day-popup" id="day-popup">
+      <div class="day-popup-header">
+        <div class="day-popup-title" id="day-popup-title">
+          Dienstag, 26. März
+          <span id="day-popup-sub"></span>
+        </div>
+        <button class="day-popup-close" onclick="closeDayPopup()">✕ schließen</button>
+      </div>
+      <div class="day-popup-body" id="day-popup-body"></div>
+    </div>
+  </div>
+
+  <!-- MODULE DETAIL MODAL -->
+  <div class="modal-overlay" id="module-modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕ close</button>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ==================== GCAL TAB ==================== -->
+  <div class="tab-panel" id="tab-gcal">
+    <div class="gcal-wrap">
+      <div class="gcal-nav">
+        <button onclick="prevMonth()">← Zurück</button>
+        <div class="gcal-month-title" id="gcal-title"></div>
+        <button onclick="nextMonth()">Weiter →</button>
+        <button onclick="goToday()" style="margin-left:auto;">Heute</button>
+      </div>
+      <div class="gcal-grid" id="gcal-grid"></div>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-modules">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterModules('all', this)">Alle</button>
+      <button class="filter-btn" onclick="filterModules('pending', this)">Ausstehend</button>
+      <button class="filter-btn" onclick="filterModules('done', this)">Abgeschlossen</button>
+      <button class="filter-btn" onclick="filterModules('K', this)">Klausur</button>
+      <button class="filter-btn" onclick="filterModules('PO', this)">Portfolio</button>
+      <button class="filter-btn" onclick="filterModules('CWB', this)">Workbook</button>
+    </div>
+    <div class="ai-note">
+      <div class="ai-note-icon">⚠️</div>
+      <div><strong style="color:var(--accent4)">Design – Form und Variation:</strong> KI ist bei dieser Aufgabe ausdrücklich nicht erlaubt. Alle anderen Module können mit KI-Unterstützung erarbeitet werden.</div>
+    </div>
+    <table class="modules-table" id="modules-table">
+      <thead>
+        <tr>
+          <th class="check-col">✓</th>
+          <th>Modul</th>
+          <th>Sem.</th>
+          <th>Typ</th>
+          <th>ECTS</th>
+          <th>Wochen</th>
+          <th>Zieldatum</th>
+        </tr>
+      </thead>
+      <tbody id="modules-tbody">
+        <!-- Generated by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== SEMESTERS TAB ==================== -->
+  <div class="tab-panel" id="tab-semesters">
+    <div class="sem-progress-grid" id="sem-grid">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+  <!-- ==================== THESIS TAB ==================== -->
+  <div class="tab-panel" id="tab-thesis">
+    <div class="graduation-card">
+      <div class="big-date">8. Nov 2026</div>
+      <div class="sub">Ziel-Abgabedatum · Bachelorarbeit Design · SA + PM</div>
+    </div>
+    <div class="ai-note">
+      <div class="ai-note-icon">🤖</div>
+      <div>KI schreibt jedes Kapitel als Entwurf. Du schreibst Einleitung und Fazit selbst (erst auf Englisch, dann übersetzen). Kolloquium: Du musst jeden Satz erklären können.</div>
+    </div>
+    <div style="margin-bottom:1.5rem;">
+      <div class="bar-label" style="margin-bottom:0.5rem;">
+        <span>Bachelorarbeit-Fortschritt</span>
+        <strong id="thesis-pct-label">0%</strong>
+      </div>
+      <div class="progress-bar" style="height:12px;"><div class="progress-fill amber" id="thesis-bar-big" style="width:0%"></div></div>
+    </div>
+    <h3 style="font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:1rem;">8-Wochen Zeitplan</h3>
+    <div class="thesis-timeline" id="thesis-phases">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+  <!-- ==================== MILESTONES TAB ==================== -->
+  <div class="tab-panel" id="tab-milestones">
+    <div id="milestones-container">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const START = new Date('2026-03-26');
+
+// Duration in weeks
+const MODULES = [
+  // Semester 1
+  { id: 1, name: 'Human-Computer Interaction', sem: 2, type: 'K', ects: 5, weeks: 2, note: '⚡ Exam: 3 April 2026 — flashcards ready on Quizlet', noAI: false, deadline: new Date('2026-04-03') },
+  { id: 2, name: 'Design – Form und Variation', sem: 1, type: 'CWB', ects: 5, weeks: 1, note: '⚠️ KI verboten — Done: 12 April 2026', noAI: true, deadline: new Date('2026-04-12') },
+  { id: 3, name: 'Darstellen: Fotografie und Video', sem: 1, type: 'BPO', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 4, name: 'Typografie: Schrift entdecken', sem: 1, type: 'AWB', ects: 5, weeks: 1, note: 'AWB statt Klausur gewählt', noAI: false },
+  // Semester 2
+  { id: 5, name: 'Typografie: Schrift anwenden', sem: 2, type: 'FP', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 6, name: 'Bildliche Inszenierung', sem: 2, type: 'CWB', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 7, name: 'Projekt: Grafikdesign', sem: 2, type: 'PO', ects: 5, weeks: 1, note: null, noAI: false },
+  // Semester 3
+  { id: 8, name: 'Designtheorie', sem: 3, type: 'H', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 9, name: 'Mikroelektronik für Designer:innen', sem: 3, type: 'CWB', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 10, name: 'Interaktionsgestaltung', sem: 3, type: 'K', ects: 5, weeks: 2, note: null, noAI: false },
+  { id: 11, name: 'Storytelling', sem: 3, type: 'FP', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 12, name: 'Grundlagen der Animation', sem: 3, type: 'CWB', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 13, name: 'Projekt: Cross-Media Webdesign', sem: 3, type: 'PO', ects: 5, weeks: 1, note: null, noAI: false },
+  // Semester 4
+  { id: 14, name: 'Gestaltungsgrundlagen 3D – Raum', sem: 4, type: 'CWB', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 15, name: 'Projekt: Design audio-visueller Medien', sem: 4, type: 'PO', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 16, name: 'Datenvisualisierung', sem: 4, type: 'CWB', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 17, name: 'Mobile Media Design', sem: 4, type: 'K', ects: 5, weeks: 2, note: null, noAI: false },
+  { id: 18, name: 'Projekt: Mobile Design', sem: 4, type: 'PO', ects: 5, weeks: 1, note: null, noAI: false },
+  // Semester 5
+  { id: 19, name: 'Interkulturelle Handlungskompetenzen', sem: 5, type: 'F', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 20, name: 'Seminar: Gesellschaft & Digitale Medien', sem: 5, type: 'S', ects: 5, weeks: 1, note: null, noAI: false },
+  { id: 21, name: 'Wahlpflichtbereich A', sem: 5, type: 'PO', ects: 10, weeks: 2, note: 'Portfolio/CWB — kein Klausur wählen!', noAI: false, isWahl: true },
+  { id: 22, name: 'Wahlpflichtbereich B', sem: 5, type: 'PO', ects: 10, weeks: 2, note: 'Portfolio/CWB — kein Klausur wählen!', noAI: false, isWahl: true },
+  // Semester 6
+  { id: 23, name: 'Wahlpflichtbereich C', sem: 6, type: 'PO', ects: 10, weeks: 2, note: 'Portfolio/CWB — kein Klausur wählen!', noAI: false, isWahl: true },
+  { id: 24, name: 'Projekt: Freie Gestaltungsarbeit I', sem: 6, type: 'BPO', ects: 5, weeks: 1, note: 'Can feed into thesis topic', noAI: false },
+  { id: 25, name: 'Projekt: Freie Gestaltungsarbeit II', sem: 6, type: 'BPO', ects: 5, weeks: 1, note: 'Together with I = thesis foundation', noAI: false },
+  // THESIS
+  { id: 26, name: 'Bachelorarbeit Design', sem: 6, type: 'SA', ects: 10, weeks: 8, note: 'Starts ~15 Sep 2026 — submit 8 Nov', noAI: false, isThesis: true },
+];
+
+// PRE-DONE modules (blacked out in curriculum — already submitted)
+const PRE_DONE_IDS = []; // Will be stored in localStorage
+
+const THESIS_PHASES = [
+  { week: 1, dates: '15–20 Sep', title: 'Exposé + Thema', desc: 'Thema bestätigen, Betreuer kontaktieren, Exposé einreichen', chapter: null },
+  { week: 2, dates: '22–27 Sep', title: 'Recherche + Gliederung', desc: 'Alle Quellen sammeln, vollständige Gliederung erstellen', chapter: null },
+  { week: 3, dates: '29 Sep–4 Okt', title: 'Kapitel 1', desc: 'Einleitung, Problemstellung, Forschungsfrage', chapter: 1 },
+  { week: 4, dates: '6–11 Okt', title: 'Kapitel 2', desc: 'Theorie + Literaturrecherche', chapter: 2 },
+  { week: 5, dates: '13–18 Okt', title: 'Kapitel 3 + Design start', desc: 'Methodik/Konzept + Design-Arbeit beginnen', chapter: 3 },
+  { week: 6, dates: '20–25 Okt', title: 'Kapitel 4 + Design fertig', desc: 'Design-Arbeit + Dokumentation, alle Assets bereit', chapter: 4 },
+  { week: 7, dates: '27 Okt–1 Nov', title: 'Kapitel 5 + 6', desc: 'Analyse/Ergebnisse + Fazit', chapter: 5 },
+  { week: 8, dates: '3–8 Nov', title: 'Revision + Abgabe', desc: 'Finale Überarbeitung, Formatierung, Kolloquium-Vorbereitung', chapter: null },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let doneIds = new Set(JSON.parse(localStorage.getItem('degree_done') || '[]'));
+let thesisDonePhases = new Set(JSON.parse(localStorage.getItem('thesis_phases') || '[]'));
+
+function save() {
+  localStorage.setItem('degree_done', JSON.stringify([...doneIds]));
+  localStorage.setItem('thesis_phases', JSON.stringify([...thesisDonePhases]));
+}
+
+// ============================================================
+// DATE HELPERS
+// ============================================================
+function addWeeks(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n * 7);
+  return d;
+}
+function fmtDate(d) {
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+}
+function fmtDateFull(d) {
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function weeksBetween(a, b) {
+  return Math.round((b - a) / (7 * 24 * 60 * 60 * 1000));
+}
+
+// Build schedule: assign start/end dates to each module
+function buildSchedule() {
+  let cursor = new Date(START);
+  const scheduled = [];
+  for (const m of MODULES) {
+    const start = new Date(cursor);
+    const end = addWeeks(cursor, m.weeks);
+    scheduled.push({ ...m, start, end });
+    cursor = end;
+  }
+  return scheduled;
+}
+
+const SCHEDULED = buildSchedule();
+
+// ============================================================
+// UPDATE STATS
+// ============================================================
+function updateStats() {
+  const nonThesis = SCHEDULED.filter(m => !m.isThesis);
+  const thesis = SCHEDULED.find(m => m.isThesis);
+
+  const doneMods = nonThesis.filter(m => doneIds.has(m.id));
+  const doneEcts = doneMods.reduce((s, m) => s + m.ects, 0) + (doneIds.has(thesis.id) ? thesis.ects : 0);
+  const doneWeeks = SCHEDULED.filter(m => doneIds.has(m.id)).reduce((s, m) => s + m.weeks, 0);
+
+  const pct = Math.round(doneIds.size / SCHEDULED.length * 100);
+  const modPct = Math.round(doneMods.length / nonThesis.length * 100);
+  const thesisPct = doneIds.has(thesis.id) ? 100 : Math.round(thesisDonePhases.size / THESIS_PHASES.length * 100);
+
+  document.getElementById('stat-done').textContent = doneIds.size;
+  document.getElementById('stat-ects').textContent = doneEcts;
+  document.getElementById('stat-weeks').textContent = doneWeeks;
+
+  const now = new Date();
+  const weeksLeft = Math.max(0, weeksBetween(now, thesis.end));
+  document.getElementById('stat-countdown').textContent = weeksLeft;
+
+  document.getElementById('pct-label').textContent = pct + '%';
+  document.getElementById('main-bar').style.width = pct + '%';
+  document.getElementById('pct-modules').textContent = modPct + '%';
+  document.getElementById('bar-modules').style.width = modPct + '%';
+  document.getElementById('pct-thesis').textContent = thesisPct + '%';
+  document.getElementById('bar-thesis').style.width = thesisPct + '%';
+  document.getElementById('thesis-pct-label').textContent = thesisPct + '%';
+  document.getElementById('thesis-bar-big').style.width = thesisPct + '%';
+}
+
+// ============================================================
+// TOGGLE MODULE
+// ============================================================
+function toggleModule(id, el) {
+  if (doneIds.has(id)) {
+    doneIds.delete(id);
+    el.classList.remove('checked');
+  } else {
+    doneIds.add(id);
+    el.classList.add('checked');
+  }
+  save();
+  updateStats();
+  refreshModuleRows(id);
+  refreshSemCards();
+}
+
+function refreshModuleRows(id) {
+  document.querySelectorAll('[data-module-id="' + id + '"]').forEach(el => {
+    const isDone = doneIds.has(id);
+    el.querySelectorAll('.module-checkbox').forEach(cb => {
+      cb.classList.toggle('checked', isDone);
+    });
+    el.querySelectorAll('.module-name').forEach(n => {
+      n.classList.toggle('done', isDone);
+    });
+    if (el.classList.contains('module-table-row')) {
+      el.classList.toggle('done-row', isDone);
+    }
+  });
+}
+
+// ============================================================
+// BADGE HELPER
+// ============================================================
+function typeBadge(type, isWahl, isThesis) {
+  if (isThesis) return `<span class="module-type-badge badge-sa">SA+PM</span>`;
+  if (isWahl) return `<span class="module-type-badge badge-wahlfach">${type} ★</span>`;
+  const cls = { CWB:'badge-cwb', AWB:'badge-awb', K:'badge-k', PO:'badge-po', H:'badge-h', FP:'badge-fp', BPO:'badge-bpo', F:'badge-f', S:'badge-s', SA:'badge-sa' };
+  return `<span class="module-type-badge ${cls[type] || 'badge-cwb'}">${type}</span>`;
+}
+
+function dotClass(m) {
+  if (m.isThesis) return 'dot-thesis';
+  if (m.isWahl) return 'dot-wahlfach';
+  if (m.type === 'K') return 'dot-klausur';
+  const now = new Date();
+  if (doneIds.has(m.id)) return 'dot-done';
+  if (m.start <= now && now < m.end) return 'dot-active';
+  return 'dot-upcoming';
+}
+
+// ============================================================
+// TIMELINE / CALENDAR
+// ============================================================
+function buildTimeline() {
+  const container = document.getElementById('timeline-container');
+  container.innerHTML = '';
+  let currentSem = 0;
+  let wkNum = 0;
+
+  for (const m of SCHEDULED) {
+    if (m.sem !== currentSem) {
+      currentSem = m.sem;
+      const semNames = ['', 'Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6'];
+      const div = document.createElement('div');
+      div.className = 'sem-divider';
+      div.innerHTML = `${semNames[currentSem] || 'Semester'} <span>${currentSem <= 4 ? 'Module' : currentSem === 5 ? 'Sem 5 + Wahlpflicht' : 'Sem 6 + Bachelorarbeit'}</span>`;
+      container.appendChild(div);
+    }
+
+    wkNum++;
+    const isDone = doneIds.has(m.id);
+
+    // Week label
+    const label = document.createElement('div');
+    label.className = 'week-label';
+    label.innerHTML = `<span class="wk">Wk ${wkNum}${m.weeks > 1 ? '–' + (wkNum + m.weeks - 1) : ''}</span><span class="date">${fmtDate(m.start)}</span>`;
+
+    // Module row
+    const row = document.createElement('div');
+    row.className = 'week-module';
+    row.dataset.moduleId = m.id;
+    row.innerHTML = `
+      <div class="status-dot ${dotClass(m)}"></div>
+      <div class="module-pill">
+        <div class="module-checkbox${isDone ? ' checked' : ''}" onclick="event.stopPropagation();toggleModule(${m.id}, this)"></div>
+        <span class="module-name${isDone ? ' done' : ''}">${m.name}${m.noAI ? ' ⚠️' : ''}</span>
+        ${typeBadge(m.type, m.isWahl, m.isThesis)}
+        ${m.weeks > 1 ? `<span class="module-duration">${m.weeks}w</span>` : ''}
+        <span class="module-deadline">${fmtDate(m.end)}</span>
+      </div>
+    `;
+
+    if (m.weeks > 1) {
+      wkNum += m.weeks - 1;
+      row.style.background = m.isThesis
+        ? 'linear-gradient(90deg, rgba(200,184,255,0.05), transparent)'
+        : m.isWahl
+        ? 'linear-gradient(90deg, rgba(255,158,181,0.04), transparent)'
+        : 'linear-gradient(90deg, rgba(255,213,158,0.04), transparent)';
+    }
+
+    container.appendChild(label);
+    container.appendChild(row);
+  }
+}
+
+// ============================================================
+// MODULES TABLE
+// ============================================================
+let currentFilter = 'all';
+function buildModulesTable() {
+  const tbody = document.getElementById('modules-tbody');
+  tbody.innerHTML = '';
+  for (const m of SCHEDULED) {
+    const isDone = doneIds.has(m.id);
+    const show = currentFilter === 'all'
+      || (currentFilter === 'done' && isDone)
+      || (currentFilter === 'pending' && !isDone)
+      || (currentFilter === m.type);
+    if (!show) continue;
+
+    const tr = document.createElement('tr');
+    tr.className = `module-table-row${isDone ? ' done-row' : ''}`;
+    tr.dataset.moduleId = m.id;
+    tr.innerHTML = `
+      <td class="check-col">
+        <div class="module-checkbox${isDone ? ' checked' : ''}" onclick="toggleModule(${m.id}, this)"></div>
+      </td>
+      <td class="module-name-cell">
+        ${m.name}
+        ${m.noAI ? '<span style="font-size:10px;color:var(--accent4);margin-left:4px;">⚠ kein KI</span>' : ''}
+        ${m.isWahl ? '<span style="font-size:10px;color:var(--accent2);margin-left:4px;">★ Wahlpflicht</span>' : ''}
+        ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${m.note}</div>` : ''}
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">S${m.sem}</td>
+      <td>${typeBadge(m.type, m.isWahl, m.isThesis)}</td>
+      <td><span class="ects-badge">${m.ects}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${m.weeks}w</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${fmtDate(m.end)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function filterModules(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildModulesTable();
+}
+
+// ============================================================
+// SEMESTER CARDS
+// ============================================================
+function buildSemCards() {
+  const grid = document.getElementById('sem-grid');
+  grid.innerHTML = '';
+  const sems = [1,2,3,4,5,6];
+  const semNames = ['Semester 1','Semester 2','Semester 3','Semester 4','Semester 5','Semester 6 + Thesis'];
+  for (const s of sems) {
+    const mods = SCHEDULED.filter(m => m.sem === s);
+    const done = mods.filter(m => doneIds.has(m.id)).length;
+    const pct = Math.round(done / mods.length * 100);
+    const ects = mods.reduce((a, m) => a + m.ects, 0);
+    const ectsD = mods.filter(m => doneIds.has(m.id)).reduce((a, m) => a + m.ects, 0);
+    const card = document.createElement('div');
+    card.className = 'sem-card';
+    card.dataset.sem = s;
+    card.innerHTML = `
+      <div class="sem-card-header">
+        <div class="sem-card-title">${semNames[s-1]}</div>
+        <div class="sem-card-count">${done}/${mods.length} · ${ectsD}/${ects} ECTS</div>
+      </div>
+      <div class="progress-bar" style="margin-bottom:1rem;"><div class="progress-fill" style="width:${pct}%"></div></div>
+      ${mods.map(m => `
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid rgba(42,42,61,0.4);">
+          <div class="module-checkbox${doneIds.has(m.id) ? ' checked' : ''}" style="width:14px;height:14px;" onclick="toggleModule(${m.id},this);refreshSemCards();" data-module-id="${m.id}"></div>
+          <span style="font-size:12px;flex:1;${doneIds.has(m.id)?'text-decoration:line-through;color:var(--muted)':''};">${m.name}</span>
+          ${typeBadge(m.type, m.isWahl, m.isThesis)}
+        </div>
+      `).join('')}
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function refreshSemCards() {
+  const cards = document.querySelectorAll('.sem-card');
+  cards.forEach(card => {
+    const s = parseInt(card.dataset.sem);
+    const mods = SCHEDULED.filter(m => m.sem === s);
+    const done = mods.filter(m => doneIds.has(m.id)).length;
+    const pct = Math.round(done / mods.length * 100);
+    const ectsD = mods.filter(m => doneIds.has(m.id)).reduce((a, m) => a + m.ects, 0);
+    const ects = mods.reduce((a, m) => a + m.ects, 0);
+    card.querySelector('.sem-card-count').textContent = `${done}/${mods.length} · ${ectsD}/${ects} ECTS`;
+    card.querySelector('.progress-fill').style.width = pct + '%';
+    card.querySelectorAll('[data-module-id]').forEach(cb => {
+      const id = parseInt(cb.dataset.moduleId);
+      cb.classList.toggle('checked', doneIds.has(id));
+    });
+  });
+}
+
+// ============================================================
+// THESIS PHASES
+// ============================================================
+function buildThesisPhases() {
+  const container = document.getElementById('thesis-phases');
+  container.innerHTML = '';
+  THESIS_PHASES.forEach((p, i) => {
+    const done = thesisDonePhases.has(i);
+    const div = document.createElement('div');
+    div.className = `thesis-phase${done ? '' : ''}`;
+    div.innerHTML = `
+      <div class="thesis-phase-header">
+        <div class="module-checkbox${done ? ' checked' : ''}" onclick="toggleThesisPhase(${i}, this)" style="cursor:pointer;"></div>
+        <div class="thesis-phase-title">Woche ${p.week} — ${p.title}</div>
+        <div class="thesis-phase-date">${p.dates}</div>
+      </div>
+      <div class="thesis-phase-desc">${p.desc}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleThesisPhase(i, el) {
+  if (thesisDonePhases.has(i)) thesisDonePhases.delete(i);
+  else thesisDonePhases.add(i);
+  save();
+  updateStats();
+  el.classList.toggle('checked', thesisDonePhases.has(i));
+}
+
+// ============================================================
+// MILESTONES
+// ============================================================
+function buildMilestones() {
+  const container = document.getElementById('milestones-container');
+  const milestones = [
+    { date: '3 Apr 2026', label: 'HCI Klausur', color: '#c9c430', badge: 'Klausur', key: null },
+    { date: '12 Apr 2026', label: 'Design – Form und Variation abgegeben', color: '#F2619C', badge: 'CWB', key: 2 },
+    { date: 'Ende Apr 2026', label: 'Semester 1 vollständig abgeschlossen', color: '#93ABD9', badge: 'Sem 1', key: null },
+    { date: 'Ende Mai 2026', label: 'Semester 2 vollständig abgeschlossen', color: '#93ABD9', badge: 'Sem 2', key: null },
+    { date: 'Ende Jun 2026', label: 'Semester 3 vollständig abgeschlossen', color: '#93ABD9', badge: 'Sem 3', key: null },
+    { date: 'Ende Jul 2026', label: 'Semester 4 vollständig abgeschlossen', color: '#93ABD9', badge: 'Sem 4', key: null },
+    { date: 'Ende Aug 2026', label: 'Semester 5 + Wahlpflicht A+B abgeschlossen', color: '#93ABD9', badge: 'Sem 5', key: null },
+    { date: '12 Sep 2026', label: 'ALLE Module abgeschlossen — Thesis ready', color: '#F2619C', badge: '🎯 Meilenstein', key: null },
+    { date: '15 Sep 2026', label: 'Bachelorarbeit beginnt', color: '#F2619C', badge: 'Thesis', key: null },
+    { date: 'Ende Sep 2026', label: 'Exposé eingereicht + Kapitel 1+2 fertig', color: '#c9c430', badge: 'Thesis Wk 1+2', key: null },
+    { date: 'Ende Okt 2026', label: 'Kapitel 3–6 fertig + Design-Arbeit abgeschlossen', color: '#c9c430', badge: 'Thesis Wk 5+6', key: null },
+    { date: '8 Nov 2026', label: 'Bachelorarbeit abgegeben', color: '#F2619C', badge: '🎓 Abgabe', key: null, isThesis: true },
+    { date: 'Dez 2026', label: 'Kolloquium + Abschlussformalitäten', color: '#E7BEF8', badge: 'Kolloquium', key: null },
+    { date: '1 Jan 2027', label: '🎉 Abschlussjahr — Das Leben beginnt', color: '#93ABD9', badge: '★ Ziel', key: null },
+  ];
+  container.innerHTML = milestones.map(m => `
+    <div class="milestone-row${m.isThesis ? ' thesis-row' : ''}">
+      <div class="milestone-date">${m.date}</div>
+      <div class="milestone-label">${m.label}</div>
+      <div class="milestone-badge" style="background:${m.color}22;color:${m.color};border:1px solid ${m.color}44;">${m.badge}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// MODULE DETAILS
+// ============================================================
+const MODULE_DETAILS = {
+  1: {
+    description: 'Klausur über alle 7 Lektionen der Mensch-Computer-Interaktion. 14 Single-Choice-Fragen + 6 offene Fragen. Mindestens 50% für Bestehen. Du hast bereits alle Flashcards auf Quizlet fertig — jetzt geht es nur noch ums systematische Durcharbeiten.',
+    aiRole: 'KI erstellt Flashcards, Lernzusammenfassungen und 20 Übungsfragen pro Lektion. Du lernst und schreibst die Klausur.',
+    todos: [
+      { text: 'L1 Grundlagen (53 Begriffe) — Active Recall', date: '26 Mär' },
+      { text: 'L2 Wahrnehmung (69 Begriffe) — aufteilen auf 2 Sessions', date: '27 Mär' },
+      { text: 'L3 Kognition & Motorik (59 Begriffe)', date: '28 Mär' },
+      { text: 'L3 Mathematische Gesetze (20 Begriffe) — Fitts, Hick verstehen', date: '28 Mär' },
+      { text: 'L4 Mentale Modelle & Fehler (51 Begriffe) + 2 offene Antworten üben', date: '29 Mär' },
+      { text: 'L5 Wahrnehmung & Technik (51 Begriffe)', date: '30 Mär' },
+      { text: 'L6 Sozio-tech & Datenschutz (60 Begriffe)', date: '31 Mär' },
+      { text: 'L7 Technologien (54 Begriffe) + L2 Tastsinn (24 Begriffe)', date: '31 Mär' },
+      { text: 'Vollständiger Mock-Test: alle Sets gemischt + 6 offene Antworten', date: '1 Apr' },
+      { text: 'Schwache Karten wiederholen + 4 weitere offene Antworten', date: '2 Apr' },
+      { text: '🎯 KLAUSUR SCHREIBEN', date: '3 Apr' },
+    ]
+  },
+  2: {
+    description: '⚠️ KI ist bei diesem Modul ausdrücklich VERBOTEN. Es geht darum, eigene gestalterische Fähigkeiten aufzubauen. 4 Prüfungsaufgaben, je als PDF abzugeben: Artefakte sammeln & anordnen, Formen variieren, Wörter variieren, alles kombinieren. Alles analog, fotografiert, dann als PDF auf PebblePad hochladen.',
+    aiRole: '⚠️ KI für kreative Arbeit VERBOTEN. KI erlaubt für: Ideen-Inspiration, To-Do-Listen, Reflexionstexte entwerfen (du humanisierst sie). Alle Fotos und Designs musst du selbst erstellen.',
+    todos: [
+      { text: 'Materialien kaufen: Skizzenbuch, Fine Liner, Marker, Tonpapier, Cutter', date: '4 Apr' },
+      { text: 'Aufgabe 1A: 20 verschiedene Artefakte sammeln, anordnen, fotografieren + Text (1000–1500 Z.)', date: '4 Apr' },
+      { text: 'Aufgabe 1B: 50 identische Objekte — mindestens 25 Anordnungen fotografieren', date: '5 Apr' },
+      { text: 'Aufgabe 1B: 20 beste auswählen + Auswahltext schreiben', date: '6 Apr' },
+      { text: 'Aufgabe 2A: Einfache Form finden (Stein, Blatt, Kanaldeckel) und 30+ Varianten erstellen', date: '7–8 Apr' },
+      { text: 'Aufgabe 2A: 20 beste auswählen und fotografieren/scannen', date: '8 Apr' },
+      { text: 'Aufgabe 2B: 10 Kombinationen aus 1B + 2A + Text (1000–1500 Z.)', date: '9 Apr' },
+      { text: 'Aufgabe 3A: Einfaches Wort wählen, 30+ Variationen analog erstellen, 20 auswählen', date: '10 Apr' },
+      { text: 'Aufgabe 3B: 10 Kombinationen aus 2A + 3A + Text', date: '11 Apr' },
+      { text: 'Aufgabe 4: 10 Kombinationen aus 1B + 2A + 3A + Text (1000–1500 Z.)', date: '11 Apr' },
+      { text: '🎯 Alle 4 PDFs layouten (DIN A4 Querformat) + auf PebblePad hochladen', date: '12 Apr' },
+    ]
+  }
+};
+
+// ============================================================
+// MODAL
+// ============================================================
+const todoDone = new Set(JSON.parse(localStorage.getItem('todo_done') || '[]'));
+function saveTodos() { localStorage.setItem('todo_done', JSON.stringify([...todoDone])); }
+
+function openModal(id) {
+  const m = SCHEDULED.find(x => x.id === id);
+  const detail = MODULE_DETAILS[id];
+  if (!m) return;
+  document.getElementById('modal-title').textContent = m.name;
+  document.getElementById('modal-meta').innerHTML = `
+    <span>${typeBadge(m.type, m.isWahl, m.isThesis)}</span>
+    <span>Sem. ${m.sem}</span>
+    <span>${m.ects} ECTS</span>
+    <span>${m.weeks} Woche${m.weeks > 1 ? 'n' : ''}</span>
+    <span>Bis: ${fmtDateFull(m.end)}</span>
+    ${m.note ? `<span style="color:var(--accent4)">${m.note}</span>` : ''}
+  `;
+  let body = '';
+  if (detail) {
+    body += `<div class="modal-section"><h4>Beschreibung</h4><p>${detail.description}</p></div>`;
+    body += `<div class="modal-section"><h4>KI-Rolle</h4><p>${detail.aiRole}</p></div>`;
+    body += `<div class="modal-section"><h4>To-Dos</h4><ul class="todo-list">`;
+    detail.todos.forEach((t, i) => {
+      const key = `todo_${id}_${i}`;
+      const done = todoDone.has(key);
+      body += `<li class="todo-item">
+        <div class="todo-cb${done ? ' done' : ''}" onclick="toggleTodo('${key}', this)"></div>
+        <span class="todo-text${done ? ' done' : ''}">${t.text}</span>
+        <span class="todo-date">${t.date}</span>
+      </li>`;
+    });
+    body += `</ul></div>`;
+  } else {
+    body += `<div class="modal-section"><h4>Status</h4><p>Klicke die Checkbox um dieses Modul als abgeschlossen zu markieren.</p></div>`;
+    body += `<div class="modal-section"><h4>Zeitplan</h4><p>Start: ${fmtDateFull(m.start)}<br>Ende: ${fmtDateFull(m.end)}</p></div>`;
+  }
+  // Mark as done button
+  const isDone = doneIds.has(id);
+  body += `<div style="margin-top:1.5rem;">
+    <button onclick="toggleModuleFromModal(${id})" style="
+      width:100%;padding:0.75rem;border-radius:8px;cursor:pointer;
+      font-family:'DM Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;
+      border:1px solid ${isDone ? '#93ABD9' : 'var(--border)'};
+      background:${isDone ? 'rgba(147,171,217,0.15)' : 'transparent'};
+      color:${isDone ? '#2a4f8a' : 'var(--muted)'};
+      transition:all 0.2s;
+    " id="modal-done-btn">${isDone ? '✓ Abgeschlossen' : 'Als abgeschlossen markieren'}</button>
+  </div>`;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('module-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('module-modal').classList.remove('open');
+}
+
+function toggleTodo(key, el) {
+  if (todoDone.has(key)) todoDone.delete(key);
+  else todoDone.add(key);
+  saveTodos();
+  el.classList.toggle('done', todoDone.has(key));
+  const text = el.nextElementSibling;
+  if (text) text.classList.toggle('done', todoDone.has(key));
+}
+
+function toggleModuleFromModal(id) {
+  const cb = document.querySelector(`[data-module-id="${id}"] .module-checkbox`);
+  toggleModule(id, cb || document.createElement('div'));
+  const isDone = doneIds.has(id);
+  const btn = document.getElementById('modal-done-btn');
+  if (btn) {
+    btn.textContent = isDone ? '✓ Abgeschlossen' : 'Als abgeschlossen markieren';
+    btn.style.borderColor = isDone ? 'var(--accent3)' : 'var(--border)';
+    btn.style.background = isDone ? 'rgba(152,245,212,0.1)' : 'transparent';
+    btn.style.color = isDone ? 'var(--accent3)' : 'var(--muted)';
+  }
+}
+
+// ============================================================
+// DAY TODOS DATA — what to do on each specific date
+// ============================================================
+const DAY_TODOS = {
+  '2026-03-26': [
+    { text: 'HCI Lernset: L1 Grundlagen (53 Begriffe) — Active Recall', tag: 'HCI' },
+    { text: 'HCI L2 Wahrnehmung — erste 35 Begriffe', tag: 'HCI' },
+    { text: 'Stadtbibliothek: Uni-Block 08:00–12:00', tag: 'Uni' },
+    { text: 'Einkaufen: Materialien für Form+Variation besorgen (Skizzenbuch, Fine Liner, 50 identische Objekte)', tag: 'Einkauf' },
+    { text: 'Proposals: UGC-Agenturen + Design Jobs pitchen (1h)', tag: 'Arbeit' },
+    { text: 'Design Jobs 3h', tag: 'Arbeit' },
+  ],
+  '2026-03-27': [
+    { text: 'HCI L2 Wahrnehmung — restliche 34 Begriffe', tag: 'HCI' },
+    { text: 'HCI L3 Kognition & Motorik — erste 30 Begriffe', tag: 'HCI' },
+    { text: 'Schwache Karten aus L1+L2 wiederholen', tag: 'HCI' },
+    { text: 'Arm day + 10k Walk', tag: 'Fitness' },
+    { text: 'Proposals 1h', tag: 'Arbeit' },
+    { text: 'Design Jobs 3h', tag: 'Arbeit' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+  '2026-03-28': [
+    { text: 'HCI L3 Kognition — restliche 29 Begriffe', tag: 'HCI' },
+    { text: 'HCI L3 Mathematische Gesetze (20 Begriffe) — Fitts + Hick verstehen', tag: 'HCI' },
+    { text: 'Leg day + 10k Walk', tag: 'Fitness' },
+    { text: 'UGC Filming + Editing 3h', tag: 'UGC' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+  '2026-03-29': [
+    { text: 'HCI L4 Mentale Modelle & Fehler (51 Begriffe) — full pass', tag: 'HCI' },
+    { text: '2 offene Antworten ausformulieren (L4 Topics)', tag: 'HCI' },
+    { text: 'Arm day + 10k Walk', tag: 'Fitness' },
+    { text: 'UGC Filming + Editing 3h', tag: 'UGC' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+  '2026-03-30': [
+    { text: 'HCI L5 Wahrnehmung, Darstellung & Technik (51 Begriffe)', tag: 'HCI' },
+    { text: 'HCI L6 Sozio-tech & Datenschutz — erste 30 Begriffe', tag: 'HCI' },
+    { text: 'Proposals 1h', tag: 'Arbeit' },
+    { text: 'Design Jobs 3h', tag: 'Arbeit' },
+    { text: 'Social Media 2h', tag: 'Content' },
+    { text: '10k Walk + Audiobook', tag: 'Fitness' },
+  ],
+  '2026-03-31': [
+    { text: 'HCI L6 restliche 30 Begriffe', tag: 'HCI' },
+    { text: 'HCI L7 Technologien — erste 30 Begriffe', tag: 'HCI' },
+    { text: 'HCI L2 Tastsinn & Schmecken (24 Begriffe) — quick win!', tag: 'HCI' },
+    { text: 'Leg day + 10k Walk', tag: 'Fitness' },
+    { text: 'Proposals 1h', tag: 'Arbeit' },
+    { text: 'UGC Filming + Editing 3h', tag: 'UGC' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+  '2026-04-01': [
+    { text: 'Vollständiger Ruhetag 🌟 Kein Uni, kein Arbeit', tag: 'Pause' },
+    { text: 'Optionaler Spaziergang im Park', tag: 'Fitness' },
+    { text: '30min Lesen vor dem Schlafen', tag: 'Lesen' },
+  ],
+  '2026-04-02': [
+    { text: 'LETZTER LERNTAG: Alle HCI-Sets gemischt durchgehen, Schwachstellen markieren', tag: 'HCI' },
+    { text: '6 offene Antworten ausformulieren (L4 + L6)', tag: 'HCI' },
+    { text: 'Nur schwache Karten wiederholen — dann AUFHÖREN', tag: 'HCI' },
+    { text: 'Stadtbibliothek für HCI-Abschlusslernen', tag: 'Uni' },
+    { text: 'Einkaufen in der Stadt', tag: 'Einkauf' },
+    { text: 'Park: Kopf leeren, kein Lernen mehr', tag: 'Fitness' },
+    { text: 'Früh ins Bett — Klausur morgen um 08:00!', tag: '⚠️' },
+  ],
+  '2026-04-03': [
+    { text: '🎓 HCI KLAUSUR 08:00–12:00 — kein Cramming heute Morgen!', tag: 'Klausur' },
+    { text: 'Normales Frühstück, ruhig bleiben', tag: 'Klausur' },
+    { text: 'Strategie: 2 falsche eliminieren → entscheiden (Single Choice)', tag: 'Klausur' },
+    { text: 'Strategie: Definition → Beispiel → Implikation (Offene Fragen)', tag: 'Klausur' },
+    { text: 'Nach Klausur: Pause + Mittagessen 🎉', tag: 'Pause' },
+    { text: 'Proposals + Design Jobs nachmittags', tag: 'Arbeit' },
+  ],
+  '2026-04-04': [
+    { text: '🎨 Form+Variation Tag 1: Aufgabe 1A — 20 Artefakte sammeln (gleicher Typ, visuell verschieden)', tag: 'Uni' },
+    { text: 'Artefakte auf neutralem hellen Hintergrund anordnen + fotografieren (Tageslicht!)', tag: 'Uni' },
+    { text: 'Analyse-Text schreiben (1000–1500 Zeichen): Haptik, Unterschiede, Übereinstimmungen', tag: 'Uni' },
+    { text: '⚠️ KEIN KI für kreative Arbeit! Nur für Text-Entwurf erlaubt', tag: '⚠️' },
+    { text: 'Leg day + 10k Walk', tag: 'Fitness' },
+    { text: 'Proposals 1h', tag: 'Arbeit' },
+    { text: 'Design Jobs 3h', tag: 'Arbeit' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+  '2026-04-05': [
+    { text: '🎨 Form+Variation Tag 2: Aufgabe 1B — 50 identische Objekte, 20–25 Anordnungen fotografieren', tag: 'Uni' },
+    { text: 'Variieren: eng vs. locker, Raster vs. Chaos, 2D und 3D, symmetrisch vs. organisch', tag: 'Uni' },
+    { text: 'Ziel: 30+ Varianten gesamt erstellen', tag: 'Uni' },
+    { text: 'Arm day + 10k Walk', tag: 'Fitness' },
+    { text: 'UGC Filming + Editing 3h', tag: 'UGC' },
+    { text: 'Social Media 2h', tag: 'Content' },
+  ],
+};
+
+// Generic weekly todos based on day of week
+function getGenericTodos(date) {
+  const dow = date.getDay();
+  const todos = [];
+  if (dow >= 1 && dow <= 6) todos.push({ text: 'Uni-Block 08:00–12:00 (4h)', tag: 'Uni' });
+  if (dow === 1) todos.push({ text: 'Stadtbibliothek + Einkaufen (Montags-Routine)', tag: 'Stadt' });
+  if ([2,4].includes(dow)) todos.push({ text: 'Arm day + 10k Walk', tag: 'Fitness' });
+  if ([3,6].includes(dow)) todos.push({ text: 'Leg day + 10k Walk', tag: 'Fitness' });
+  if (![2,4,3,6].includes(dow) && dow >= 1 && dow <= 5) todos.push({ text: '10k Walk nach dem Mittagessen', tag: 'Fitness' });
+  if ([3,4].includes(dow)) todos.push({ text: 'UGC Filming + Editing 3h', tag: 'UGC' });
+  if (dow >= 1 && dow <= 5) todos.push({ text: 'Proposals 1h: UGC-Agenturen + Design Jobs', tag: 'Arbeit' });
+  if (dow >= 1 && dow <= 5) todos.push({ text: 'Design Jobs 3–4h (Upwork/Fiverr/Contra)', tag: 'Arbeit' });
+  if (dow >= 2 && dow <= 6) todos.push({ text: 'Social Media 2h: Posten + Engagement', tag: 'Content' });
+  if (dow === 0) todos.push({ text: 'Ruhetag 🌟 Kein Uni, kein Druck', tag: 'Pause' });
+  todos.push({ text: '30min Lesen vor dem Schlafen', tag: 'Lesen' });
+  todos.push({ text: 'Gesundes Frühstück + Mittagessen + Abendessen (max. 500 kcal je)', tag: 'Ernährung' });
+  return todos;
+}
+
+// ============================================================
+// DAY POPUP
+// ============================================================
+const DAY_MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const DAY_NAMES = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const TAG_COLORS = {
+  'HCI': '#93ABD9', 'Uni': '#93ABD9', 'Fitness': '#E7BEF8', 'UGC': '#F2619C',
+  'Arbeit': '#c8a0b8', 'Content': '#EDE986', 'Pause': '#98f5d4', 'Lesen': '#93ABD9',
+  'Ernährung': '#c9d48a', 'Stadt': '#F2619C', 'Einkauf': '#E7BEF8',
+  'Klausur': '#EDE986', '⚠️': '#ffcb47',
+};
+
+function openDayPopup(date) {
+  const key = date.toISOString().split('T')[0];
+  const events = DAY_EVENTS[key] || [];
+  const specificTodos = DAY_TODOS[key] || null;
+  const genericTodos = getGenericTodos(date);
+  const todos = specificTodos || genericTodos;
+
+  // Header
+  document.getElementById('day-popup-title').innerHTML =
+    `${DAY_NAMES[date.getDay()]}, ${date.getDate()}. ${DAY_MONTHS[date.getMonth()]} ${date.getFullYear()}` +
+    `<span>${todos.length} To-Do${todos.length !== 1 ? 's' : ''} · ${events.length} Event${events.length !== 1 ? 's' : ''}</span>`;
+
+  let html = '';
+
+  // Events section
+  if (events.length > 0) {
+    html += '<div class="day-section-label">Heutige Events</div>';
+    events.forEach(ev => {
+      const dotColor = {
+        'ev-uni':'#93ABD9','ev-gym':'#E7BEF8','ev-work':'#c8a0b8',
+        'ev-ugc':'#F2619C','ev-design':'#E7BEF8','ev-social':'#EDE986',
+        'ev-proposal':'#93ABD9','ev-module':'#F2619C','ev-exam':'#EDE986',
+        'ev-deadline':'#F2619C','ev-walk':'#93ABD9'
+      }[ev.cls] || '#c8a0b8';
+      const bgColor = dotColor + '22';
+      const isClickable = !!ev.moduleId;
+      html += `<div class="day-event-item${isClickable ? ' clickable' : ''}" style="background:${bgColor};"
+        ${isClickable ? `onclick="closeDayPopup();openModal(${ev.moduleId})"` : ''}>
+        <div class="day-event-dot" style="background:${dotColor}"></div>
+        <span style="color:#2a1a22;flex:1;">${ev.text}</span>
+        ${isClickable ? '<span style="font-size:10px;color:#F2619C;font-family:DM Mono,monospace;">→ Details</span>' : ''}
+      </div>`;
+    });
+  }
+
+  // To-Dos section
+  html += '<div class="day-section-label">To-Dos für heute</div>';
+  if (todos.length === 0) {
+    html += '<div class="day-empty">Keine To-Dos für diesen Tag.</div>';
+  } else {
+    todos.forEach((t, i) => {
+      const dKey = `daytodo_${key}_${i}`;
+      const isDone = todoDone.has(dKey);
+      const tagColor = TAG_COLORS[t.tag] || '#c8a0b8';
+      html += `<div class="day-todo-item">
+        <div class="day-todo-cb${isDone ? ' done' : ''}" onclick="toggleDayTodo('${dKey}',this)"></div>
+        <span class="day-todo-text${isDone ? ' done' : ''}">${t.text}</span>
+        <span class="day-todo-tag" style="background:${tagColor}22;color:${tagColor};">${t.tag}</span>
+      </div>`;
+    });
+  }
+
+  // Progress ring for the day
+  const doneTodos = todos.filter((_,i) => todoDone.has(`daytodo_${key}_${i}`)).length;
+  const pct = todos.length > 0 ? Math.round(doneTodos / todos.length * 100) : 0;
+  const circumference = 2 * Math.PI * 14;
+  const dashOffset = circumference - (pct / 100) * circumference;
+  html = `<div style="display:flex;align-items:center;gap:12px;padding:12px 0 4px;">
+    <svg width="36" height="36" style="flex-shrink:0;">
+      <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(242,97,156,0.1)" stroke-width="3"/>
+      <circle cx="18" cy="18" r="14" fill="none" stroke="#F2619C" stroke-width="3"
+        stroke-dasharray="${circumference.toFixed(1)}" stroke-dashoffset="${dashOffset.toFixed(1)}"
+        stroke-linecap="round" transform="rotate(-90 18 18)" style="transition:stroke-dashoffset 0.4s;"/>
+      <text x="18" y="22" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#F2619C">${pct}%</text>
+    </svg>
+    <div style="font-size:12px;color:#a0607a;font-family:'DM Mono',monospace;">
+      <strong style="color:#2a1a22;font-size:14px;">${doneTodos}/${todos.length}</strong> erledigt
+    </div>
+  </div>` + html;
+
+  document.getElementById('day-popup-body').innerHTML = html;
+  document.getElementById('day-popup-overlay').classList.add('open');
+}
+
+function closeDayPopup() {
+  document.getElementById('day-popup-overlay').classList.remove('open');
+}
+
+function toggleDayTodo(key, el) {
+  if (todoDone.has(key)) todoDone.delete(key);
+  else todoDone.add(key);
+  saveTodos();
+  el.classList.toggle('done', todoDone.has(key));
+  const text = el.nextElementSibling;
+  if (text) text.classList.toggle('done', todoDone.has(key));
+  // Update the progress ring
+  const dateKey = key.split('_').slice(1,4).join('-');
+  const allKeys = Object.keys(todoDone).filter(k => k.startsWith(`daytodo_${dateKey}_`));
+  const date = new Date(dateKey + 'T12:00:00');
+  const todos = DAY_TODOS[dateKey] || getGenericTodos(date);
+  const done = todos.filter((_,i) => todoDone.has(`daytodo_${dateKey}_${i}`)).length;
+  const pct = todos.length > 0 ? Math.round(done / todos.length * 100) : 0;
+  const circumference = 2 * Math.PI * 14;
+  const dashOffset = circumference - (pct / 100) * circumference;
+  const circle = document.querySelector('#day-popup circle:last-of-type');
+  const txt = document.querySelector('#day-popup text');
+  const counter = document.querySelector('#day-popup strong');
+  if (circle) circle.setAttribute('stroke-dashoffset', dashOffset.toFixed(1));
+  if (txt) txt.textContent = pct + '%';
+  if (counter) counter.textContent = done + '/' + todos.length;
+}
+
+
+let gcalDate = new Date();
+gcalDate.setDate(1);
+
+const DAY_EVENTS = {};
+function seedDayEvents() {
+  // Recurring daily events based on weekly schedule
+  const s = new Date('2026-03-26');
+  const end = new Date('2026-12-31');
+  let d = new Date(s);
+  while (d <= end) {
+    const dow = d.getDay(); // 0=Sun,1=Mon,...6=Sat
+    const key = d.toISOString().split('T')[0];
+    if (!DAY_EVENTS[key]) DAY_EVENTS[key] = [];
+    const isStudyDay = dow >= 1 && dow <= 6; // Mon-Sat
+    if (isStudyDay) {
+      DAY_EVENTS[key].push({ text: '📚 Uni 08–12', cls: 'ev-uni' });
+    }
+    if (dow >= 1 && dow <= 5) { // Mon-Fri: work
+      DAY_EVENTS[key].push({ text: '💻 Arbeit', cls: 'ev-work' });
+    }
+    if ([2,4].includes(dow)) { // Tue,Thu: arms
+      DAY_EVENTS[key].push({ text: '💪 Arm day', cls: 'ev-gym' });
+    }
+    if ([3,6].includes(dow)) { // Wed,Sat: legs
+      DAY_EVENTS[key].push({ text: '🦵 Leg day', cls: 'ev-gym' });
+    }
+    if ([3,4].includes(dow)) { // Wed,Thu: UGC
+      DAY_EVENTS[key].push({ text: '🎬 UGC', cls: 'ev-ugc' });
+    }
+    if (dow >= 2 && dow <= 6) { // Tue-Sat: social
+      DAY_EVENTS[key].push({ text: '📱 Social', cls: 'ev-social' });
+    }
+    if (dow === 1) { // Mon: city/library
+      DAY_EVENTS[key].push({ text: '🏛️ Bibliothek + Stadt', cls: 'ev-proposal' });
+    }
+    if (dow >= 1 && dow <= 5) { // Mon-Fri: proposals
+      DAY_EVENTS[key].push({ text: '📨 Proposals 1h', cls: 'ev-proposal' });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  // Module deadlines
+  for (const m of SCHEDULED) {
+    const key = m.end.toISOString().split('T')[0];
+    if (!DAY_EVENTS[key]) DAY_EVENTS[key] = [];
+    DAY_EVENTS[key].push({ text: `📌 ${m.name.length > 18 ? m.name.slice(0,16)+'…' : m.name}`, cls: m.isThesis ? 'ev-deadline' : 'ev-module', moduleId: m.id });
+  }
+  // Special events
+  const specials = [
+    { date: '2026-04-03', text: '🎓 HCI Klausur!', cls: 'ev-exam', moduleId: 1 },
+    { date: '2026-04-12', text: '🎨 Form+Variation Abgabe', cls: 'ev-deadline', moduleId: 2 },
+    { date: '2026-09-15', text: '🚀 Bachelorarbeit Start', cls: 'ev-exam' },
+    { date: '2026-11-08', text: '🏆 Thesis Abgabe!', cls: 'ev-deadline' },
+  ];
+  specials.forEach(s => {
+    if (!DAY_EVENTS[s.date]) DAY_EVENTS[s.date] = [];
+    DAY_EVENTS[s.date].unshift({ text: s.text, cls: s.cls, moduleId: s.moduleId });
+  });
+}
+seedDayEvents();
+
+function renderGcal() {
+  const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const DAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const y = gcalDate.getFullYear();
+  const mo = gcalDate.getMonth();
+  document.getElementById('gcal-title').textContent = `${MONTHS[mo]} ${y}`;
+  const grid = document.getElementById('gcal-grid');
+  grid.innerHTML = '';
+  // Day headers
+  DAYS.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'gcal-day-header';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+  const firstDay = new Date(y, mo, 1).getDay();
+  const daysInMonth = new Date(y, mo+1, 0).getDate();
+  const today = new Date();
+  // Fill leading empty cells
+  for (let i = 0; i < firstDay; i++) {
+    const prevDate = new Date(y, mo, -(firstDay - i - 1));
+    const cell = makeCell(prevDate, true, today);
+    grid.appendChild(cell);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, mo, d);
+    const cell = makeCell(date, false, today);
+    grid.appendChild(cell);
+  }
+  // Fill trailing
+  const total = firstDay + daysInMonth;
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    const date = new Date(y, mo+1, i);
+    const cell = makeCell(date, true, today);
+    grid.appendChild(cell);
+  }
+}
+
+function makeCell(date, otherMonth, today) {
+  const cell = document.createElement('div');
+  cell.className = 'gcal-cell' + (otherMonth ? ' other-month' : '');
+  const isToday = date.toDateString() === today.toDateString();
+  if (isToday) cell.classList.add('today');
+  const dateNum = document.createElement('div');
+  dateNum.className = 'gcal-date';
+  dateNum.textContent = date.getDate();
+  cell.appendChild(dateNum);
+  const key = date.toISOString().split('T')[0];
+  const events = DAY_EVENTS[key] || [];
+  const maxShow = 3;
+  events.slice(0, maxShow).forEach(ev => {
+    const el = document.createElement('div');
+    el.className = `gcal-event ${ev.cls}`;
+    el.textContent = ev.text;
+    el.title = ev.text;
+    if (ev.moduleId) {
+      el.onclick = (e) => { e.stopPropagation(); openModal(ev.moduleId); };
+    } else {
+      el.onclick = (e) => { e.stopPropagation(); openDayPopup(date); };
+    }
+    cell.appendChild(el);
+  });
+  if (events.length > maxShow) {
+    const more = document.createElement('div');
+    more.className = 'gcal-more';
+    more.textContent = `+${events.length - maxShow} mehr`;
+    more.onclick = (e) => { e.stopPropagation(); openDayPopup(date); };
+    cell.appendChild(more);
+  }
+  // Click on the cell background opens the day popup
+  cell.onclick = () => openDayPopup(date);
+  return cell;
+}
+
+function prevMonth() { gcalDate.setMonth(gcalDate.getMonth()-1); renderGcal(); }
+function nextMonth() { gcalDate.setMonth(gcalDate.getMonth()+1); renderGcal(); }
+function goToday() { gcalDate = new Date(); gcalDate.setDate(1); renderGcal(); }
+
+// Make timeline rows clickable to open modal
+function makeTimelineClickable() {
+  document.querySelectorAll('.week-module').forEach(row => {
+    const id = parseInt(row.dataset.moduleId);
+    row.addEventListener('click', (e) => {
+      if (e.target.classList.contains('module-checkbox')) return;
+      openModal(id);
+    });
+    row.style.cursor = 'pointer';
+  });
+}
+
+
+buildTimeline();
+buildModulesTable();
+buildSemCards();
+buildThesisPhases();
+buildMilestones();
+updateStats();
+renderGcal();
+setTimeout(makeTimelineClickable, 50);
+
+// ESC closes any open popup/modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDayPopup();
+    closeModal();
+  }
+});
+
+// Animate in
+document.querySelectorAll('.stat-card, .main-bar-wrap').forEach((el, i) => {
+  el.style.opacity = '0';
+  el.style.animationDelay = (i * 0.08) + 's';
+  el.classList.add('animate-in');
+  setTimeout(() => el.style.opacity = '', 800 + i * 80);
+});
+</script>
+</body>
+</html>
